@@ -5,7 +5,7 @@ import (
 	"net/smtp"
 )
 
-// ✅ EmailSender implements SMTP email sending logic
+// EmailSender implements SMTP email sending logic
 type EmailSender struct {
 	SMTPHost    string
 	SMTPPort    string

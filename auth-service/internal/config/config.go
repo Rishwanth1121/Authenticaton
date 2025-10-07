@@ -14,7 +14,7 @@ type Config struct {
 	SenderPass   string
 }
 
-// ✅ LoadConfig loads strictly from environment variables
+// LoadConfig loads strictly from environment variables
 func LoadConfig() *Config {
 	cfg := &Config{
 		DBConnString: os.Getenv("DB_CONN_STRING"),
@@ -25,16 +25,16 @@ func LoadConfig() *Config {
 		SenderPass:   os.Getenv("SENDGRID_API_KEY"), // SendGrid key stored here
 	}
 
-	// ❌ Stop execution if any required value is missing
+	// Stop execution if any required value is missing
 	if cfg.DBConnString == "" ||
 		cfg.SMTPHost == "" ||
 		cfg.SMTPPort == "" ||
 		cfg.SenderEmail == "" ||
 		cfg.SenderUser == "" ||
 		cfg.SenderPass == "" {
-		log.Fatal("❌ Missing required configuration values in environment (.env)")
+		log.Fatal("Missing required configuration values in environment (.env)")
 	}
 
-	log.Println("✅ Configuration loaded successfully from .env")
+	log.Println(" Configuration loaded successfully from .env")
 	return cfg
 }

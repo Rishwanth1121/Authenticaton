@@ -13,7 +13,7 @@ func NewTokenRepository(db *sql.DB) *TokenRepository {
 	return &TokenRepository{DB: db}
 }
 
-// ✅ Insert a reset token
+//  Insert a reset token
 func (r *TokenRepository) InsertResetToken(userID int64, tokenHash string, expires time.Time) error {
 	_, err := r.DB.Exec(`
 		INSERT INTO refresh_token (user_id, token_hash, created_at, expires_at)
@@ -22,7 +22,7 @@ func (r *TokenRepository) InsertResetToken(userID int64, tokenHash string, expir
 	return err
 }
 
-// ✅ Validate reset token
+//  Validate reset token
 func (r *TokenRepository) ValidateResetToken(tokenHash string) (int64, error) {
 	var userID int64
 	err := r.DB.QueryRow(`
@@ -32,7 +32,7 @@ func (r *TokenRepository) ValidateResetToken(tokenHash string) (int64, error) {
 	return userID, err
 }
 
-// ✅ Delete token
+//  Delete token
 func (r *TokenRepository) DeleteToken(tokenHash string) error {
 	_, err := r.DB.Exec(`
 		DELETE FROM refresh_token WHERE token_hash=$1

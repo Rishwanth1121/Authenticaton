@@ -14,22 +14,22 @@ import (
 )
 
 func main() {
-	// ✅ Step 1: Load environment variables from .env file
+	//  Load environment variables from .env file
 	if err := godotenv.Load(); err != nil {
-		log.Fatal("❌ Failed to load .env file — make sure it exists in the project root")
+		log.Fatal(" Failed to load .env file — make sure it exists in the project root")
 	}
 
-	// ✅ Step 2: Load configuration from environment
+	//  Load configuration from environment
 	cfg := config.LoadConfig()
 
-	// ✅ Step 3: Connect to PostgreSQL
+	// Connect to PostgreSQL
 	db, err := sql.Open("postgres", cfg.DBConnString)
 	if err != nil {
-		log.Fatal("❌ DB connection failed:", err)
+		log.Fatal(" DB connection failed:", err)
 	}
 	defer db.Close()
 
-	// ✅ Step 4: Initialize Email Sender
+	//  Initialize Email Sender
 	emailSender := services.NewEmailSender(
 		cfg.SMTPHost,
 		cfg.SMTPPort,
@@ -38,17 +38,17 @@ func main() {
 		cfg.SenderPass,
 	)
 
-	// ✅ Step 5: Initialize Password Reset Service + Handler
+	//  Initialize Password Reset Service + Handler
 	resetService := services.NewPasswordResetService(db, emailSender)
 	resetHandler := handlers.NewPasswordResetHandler(resetService)
 
-	// ✅ Step 6: Register Routes
+	//  Register Routes
 	http.HandleFunc("/api/auth/forgot-password", resetHandler.ForgotPassword)
 	http.HandleFunc("/api/auth/reset-password", resetHandler.ResetPassword)
 
-	// ✅ Step 7: Start the HTTP Server
-	log.Println("✅ Auth Service running on http://localhost:8080")
+	//  Start the HTTP Server
+	log.Println(" Auth Service running on http://localhost:8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.Fatal("❌ Server failed:", err)
+		log.Fatal(" Server failed:", err)
 	}
 }
