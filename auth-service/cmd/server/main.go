@@ -33,6 +33,12 @@ func main() {
 
 	//  make sure this route is added
 	r.HandleFunc("/api/auth/logout", logoutHandler.Logout).Methods("POST")
+	r.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		path, _ := route.GetPathTemplate()
+		methods, _ := route.GetMethods()
+		log.Printf("Route registered: %v %v", methods, path)
+		return nil
+	})
 
 	log.Println(" Auth service running on port 8080")
 	http.ListenAndServe(":8080", r)

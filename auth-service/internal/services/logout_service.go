@@ -1,8 +1,6 @@
 package services
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 
 	"github.com/Rishwanth1121/Authenticaton/auth-service/internal/repositories"
@@ -22,9 +20,6 @@ func (s *LogoutService) Logout(refreshToken string) error {
 		return errors.New("refresh token is required")
 	}
 
-	// hash the token before comparing with DB value
-	hash := sha256.Sum256([]byte(refreshToken))
-	tokenHash := hex.EncodeToString(hash[:])
-
-	return s.TokenRepo.RevokeToken(tokenHash)
+	// No hashing! Just validate directly.
+	return s.TokenRepo.RevokeToken(refreshToken)
 }

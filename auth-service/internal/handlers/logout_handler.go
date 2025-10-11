@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/Rishwanth1121/Authenticaton/auth-service/internal/services"
 )
@@ -25,8 +26,13 @@ func (h *LogoutHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.LogoutService.Logout(req.RefreshToken)
-	if err != nil {
+	token := strings.TrimSpace(req.RefreshToken)
+	if token == "" {
+		http.Error(w, "Missing refresh_token", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.LogoutService.Logout(token); err != nil {
 		http.Error(w, "Logout failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
