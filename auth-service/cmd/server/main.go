@@ -1,35 +1,25 @@
 package main
 
 import (
-	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
-
-	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
 
 	"github.com/Rishwanth1121/Authenticaton/auth-service/internal/config"
 	"github.com/Rishwanth1121/Authenticaton/auth-service/internal/handlers"
 	"github.com/Rishwanth1121/Authenticaton/auth-service/internal/services"
+	"github.com/Rishwanth1121/Authenticaton/auth-service/pkg/database"
 )
 
 func main() {
-	//  Load environment variables from .env file
-	if err := godotenv.Load(); err != nil {
-		log.Fatal(" Failed to load .env file — make sure it exists in the project root")
-	}
-
-	//  Load configuration from environment
+	//  Load configuration (includes .env)
 	cfg := config.LoadConfig()
 
-	// Connect to PostgreSQL
-	db, err := sql.Open("postgres", cfg.DBConnString)
-	if err != nil {
-		log.Fatal(" DB connection failed:", err)
-	}
+	//  Connect to PostgreSQL
+	db := database.Connect(cfg.DBConnString)
 	defer db.Close()
 
-	//  Initialize Email Sender
+	//  Initialize email sender
 	emailSender := services.NewEmailSender(
 		cfg.SMTPHost,
 		cfg.SMTPPort,
@@ -38,17 +28,21 @@ func main() {
 		cfg.SenderPass,
 	)
 
-	//  Initialize Password Reset Service + Handler
+	//  Initialize password reset service + handler
 	resetService := services.NewPasswordResetService(db, emailSender)
 	resetHandler := handlers.NewPasswordResetHandler(resetService)
 
-	//  Register Routes
+	// Register routes
 	http.HandleFunc("/api/auth/forgot-password", resetHandler.ForgotPassword)
 	http.HandleFunc("/api/auth/reset-password", resetHandler.ResetPassword)
 
 	//  Start the HTTP Server
-	log.Println(" Auth Service running on http://localhost:8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	port := cfg.Port
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf(" Auth Service running on http://localhost:%s", port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
 		log.Fatal(" Server failed:", err)
 	}
 }
