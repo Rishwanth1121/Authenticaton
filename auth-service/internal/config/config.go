@@ -9,20 +9,36 @@ import (
 
 type Config struct {
 	DBConnString string
+	SMTPHost     string
+	SMTPPort     string
+	SenderEmail  string
+	SenderUser   string
+	SenderPass   string
+	Port         string
 }
 
-// LoadConfig loads .env variables
+// LoadConfig loads from .env file and system environment variables
 func LoadConfig() *Config {
-	// Load the .env file automatically
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("  Could not load .env file, trying system env variables")
+	// Try loading .env file
+	if err := godotenv.Load(); err != nil {
+		log.Println("  .env file not found, using system environment variables")
 	}
 
-	dbConn := os.Getenv("DB_CONN_STRING")
-	if dbConn == "" {
+	cfg := &Config{
+		DBConnString: os.Getenv("DB_CONN_STRING"),
+		SMTPHost:     os.Getenv("SMTP_HOST"),
+		SMTPPort:     os.Getenv("SMTP_PORT"),
+		SenderEmail:  os.Getenv("SENDER_EMAIL"),
+		SenderUser:   os.Getenv("SENDER_USER"),
+		SenderPass:   os.Getenv("SENDGRID_API_KEY"),
+		Port:         os.Getenv("PORT"),
+	}
+
+	// Validate required fields
+	if cfg.DBConnString == "" {
 		log.Fatal(" Missing DB_CONN_STRING in environment")
 	}
 
-	return &Config{DBConnString: dbConn}
+	log.Println(" Configuration loaded successfully")
+	return cfg
 }

@@ -1,45 +1,48 @@
 package main
 
 import (
-	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
-	_ "github.com/lib/pq"
-
 	"github.com/Rishwanth1121/Authenticaton/auth-service/internal/config"
 	"github.com/Rishwanth1121/Authenticaton/auth-service/internal/handlers"
-	"github.com/Rishwanth1121/Authenticaton/auth-service/internal/repositories"
 	"github.com/Rishwanth1121/Authenticaton/auth-service/internal/services"
+	"github.com/Rishwanth1121/Authenticaton/auth-service/pkg/database"
 )
 
 func main() {
+	//  Load configuration (includes .env)
 	cfg := config.LoadConfig()
 
-	db, err := sql.Open("postgres", cfg.DBConnString)
-	if err != nil {
-		log.Fatal("Failed to connect DB:", err)
-	}
+	//  Connect to PostgreSQL
+	db := database.Connect(cfg.DBConnString)
 	defer db.Close()
 
-	// --- setup dependencies ---
-	tokenRepo := repositories.NewTokenRepository(db)
-	logoutService := services.NewLogoutService(tokenRepo)
-	logoutHandler := handlers.NewLogoutHandler(logoutService)
+	//  Initialize email sender
+	emailSender := services.NewEmailSender(
+		cfg.SMTPHost,
+		cfg.SMTPPort,
+		cfg.SenderEmail,
+		cfg.SenderUser,
+		cfg.SenderPass,
+	)
 
-	// --- setup router ---
-	r := mux.NewRouter()
+	//  Initialize password reset service + handler
+	resetService := services.NewPasswordResetService(db, emailSender)
+	resetHandler := handlers.NewPasswordResetHandler(resetService)
 
-	//  make sure this route is added
-	r.HandleFunc("/api/auth/logout", logoutHandler.Logout).Methods("POST")
-	r.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
-		path, _ := route.GetPathTemplate()
-		methods, _ := route.GetMethods()
-		log.Printf("Route registered: %v %v", methods, path)
-		return nil
-	})
+	// Register routes
+	http.HandleFunc("/api/auth/forgot-password", resetHandler.ForgotPassword)
+	http.HandleFunc("/api/auth/reset-password", resetHandler.ResetPassword)
 
-	log.Println(" Auth service running on port 8080")
-	http.ListenAndServe(":8080", r)
+	//  Start the HTTP Server
+	port := cfg.Port
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf(" Auth Service running on http://localhost:%s", port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
+		log.Fatal(" Server failed:", err)
+	}
 }
