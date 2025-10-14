@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/Rishwanth1121/Authenticaton/auth_service/auth"
-	"github.com/Rishwanth1121/Authenticaton/auth_service/pkg/database"
 )
 
 type AuthHandler struct {
@@ -16,7 +15,7 @@ type AuthHandler struct {
 
 func NewAuthHandler() *AuthHandler {
 	return &AuthHandler{
-		db: database.GetDB(),
+		db: auth.GetDB(),
 	}
 }
 
@@ -33,6 +32,11 @@ type LoginResponse struct {
 	Token                 string `json:"token,omitempty"`
 	RefreshToken          string `json:"refresh_token,omitempty"`
 	RequiresPasswordSetup bool   `json:"requires_password_setup,omitempty"`
+}
+
+// RefreshTokenRequest represents refresh token request
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
 }
 
 // FirstLogin handles first-time login with temporary password
@@ -120,8 +124,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // CheckAuth checks if a token is valid
-// CheckAuth checks if a token is valid
 func (h *AuthHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	token := r.Header.Get("Authorization")
 	if token == "" {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -149,7 +154,6 @@ func (h *AuthHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return user information from valid token
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"message": "Token is valid",
@@ -159,6 +163,49 @@ func (h *AuthHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
 			"role":    claims.Role,
 		},
 	})
+}
+
+// RefreshToken generates new access token using refresh token
+// RefreshToken generates new access token using refresh token
+func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req RefreshTokenRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.RefreshToken == "" {
+		http.Error(w, "Refresh token is required", http.StatusBadRequest)
+		return
+	}
+
+	// Call the actual refresh token logic from auth package
+	newAccessToken, newRefreshToken, err := auth.RefreshToken(h.db, req.RefreshToken)
+	if err != nil {
+		response := LoginResponse{
+			Success: false,
+			Message: err.Error(),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	response := LoginResponse{
+		Success:      true,
+		Message:      "Tokens refreshed successfully",
+		Token:        newAccessToken,
+		RefreshToken: newRefreshToken,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // Health check endpoint

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Service Test</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; background: #f9f9f9; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .result { margin-top: 15px; padding: 10px; border-radius: 4px; white-space: pre-wrap; font-size: 14px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .token-display { word-break: break-all; font-size: 12px; background: #fff; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        h1 { color: #333; margin-bottom: 20px; }
+        h2 { color: #555; margin-bottom: 15px; border-bottom: 2px solid #007bff; padding-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔐 Auth Service Test Frontend</h1>
+    
+    <div class="container">
+        <!-- First Login Section -->
+        <div class="card">
+            <h2>1. First Login (Temp Password)</h2>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="firstEmail" value="test@college.edu">
+            </div>
+            <div class="form-group">
+                <label>Temp Password:</label>
+                <input type="password" id="tempPassword" value="temp123">
+            </div>
+            <div class="form-group">
+                <label>New Password:</label>
+                <input type="password" id="newPassword" value="MyNewSecurePassword123">
+            </div>
+            <button onclick="firstLogin()">First Login</button>
+            <div id="firstLoginResult" class="result"></div>
+        </div>
+
+        <!-- Regular Login Section -->
+        <div class="card">
+            <h2>2. Regular Login</h2>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="regularEmail" value="test@college.edu">
+            </div>
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="regularPassword" value="MyNewSecurePassword123">
+            </div>
+            <button onclick="regularLogin()">Login</button>
+            <div id="regularLoginResult" class="result"></div>
+        </div>
+
+        <!-- Check Auth Section -->
+        <div class="card">
+            <h2>3. Check Auth</h2>
+            <div class="form-group">
+                <label>JWT Token:</label>
+                <textarea id="checkToken" rows="3" placeholder="Paste JWT token here"></textarea>
+            </div>
+            <button onclick="checkAuth()">Check Token</button>
+            <div id="checkAuthResult" class="result"></div>
+        </div>
+
+        <!-- Refresh Token Section -->
+        <div class="card">
+            <h2>4. Refresh Token</h2>
+            <div class="form-group">
+                <label>Refresh Token:</label>
+                <textarea id="refreshToken" rows="3" placeholder="Paste refresh token here"></textarea>
+            </div>
+            <button onclick="refreshToken()">Refresh Token</button>
+            <div id="refreshTokenResult" class="result"></div>
+        </div>
+    </div>
+
+    <!-- Current Tokens Display -->
+    <div class="card" style="grid-column: 1 / -1; margin-top: 20px;">
+        <h2>🔑 Current Tokens</h2>
+        <div class="form-group">
+            <label>Access Token:</label>
+            <div id="currentAccessToken" class="token-display">No token yet</div>
+        </div>
+        <div class="form-group">
+            <label>Refresh Token:</label>
+            <div id="currentRefreshToken" class="token-display">No token yet</div>
+        </div>
+        <button onclick="copyAccessToken()">Copy Access Token</button>
+        <button onclick="copyRefreshToken()">Copy Refresh Token</button>
+        <button onclick="clearTokens()">Clear Tokens</button>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -8,12 +8,17 @@ import (
 	"time"
 
 	"github.com/Rishwanth1121/Authenticaton/auth_service/internal/models"
+	"github.com/Rishwanth1121/Authenticaton/auth_service/pkg/database"
 	"github.com/Rishwanth1121/Authenticaton/auth_service/pkg/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // JWT manager instance
 var jwtManager *jwt.JWTManager
+
+func GetDB() *sql.DB {
+	return database.GetDB()
+}
 
 // InitializeJWTManager sets up the JWT manager (call this from main.go)
 func InitializeJWTManager(secretKey string, tokenDuration time.Duration) {
@@ -169,4 +174,74 @@ func Login(db *sql.DB, email, password string) (string, string, error) {
 	}
 
 	return jwtToken, refreshToken, nil
+}
+
+// RefreshToken validates refresh token and returns new tokens
+// RefreshToken validates refresh token and returns new tokens
+func RefreshToken(db *sql.DB, refreshToken string) (string, string, error) {
+	var userID int
+	var expiresAt time.Time
+	var tokenID int
+	var storedTokenHash string
+
+	// Find the refresh token in database by comparing with all tokens
+	// We need to check each token since we can't reverse the hash
+	rows, err := db.Query("SELECT id, user_id, token_hash, expires_at FROM refresh_tokens")
+	if err != nil {
+		return "", "", fmt.Errorf("database error: %v", err)
+	}
+	defer rows.Close()
+
+	var foundToken bool
+	for rows.Next() {
+		err = rows.Scan(&tokenID, &userID, &storedTokenHash, &expiresAt)
+		if err != nil {
+			continue
+		}
+
+		// Compare the provided token with stored hash
+		err = bcrypt.CompareHashAndPassword([]byte(storedTokenHash), []byte(refreshToken))
+		if err == nil {
+			foundToken = true
+			break
+		}
+	}
+
+	if !foundToken {
+		return "", "", fmt.Errorf("invalid refresh token")
+	}
+
+	// Check if token is expired
+	if time.Now().After(expiresAt) {
+		// Delete expired token
+		db.Exec("DELETE FROM refresh_tokens WHERE id = $1", tokenID)
+		return "", "", fmt.Errorf("refresh token expired")
+	}
+
+	// Get user details
+	user, err := GetUserByID(db, userID)
+	if err != nil {
+		return "", "", fmt.Errorf("user not found")
+	}
+
+	// Generate new access token
+	accessToken, err := jwtManager.Generate(user)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to generate access token")
+	}
+
+	// Generate new refresh token (rotate refresh token)
+	newRefreshToken, newRefreshHash := GenerateRefreshToken()
+
+	// Update the refresh token in database (token rotation)
+	_, err = db.Exec(
+		"UPDATE refresh_tokens SET token_hash = $1, expires_at = $2, created_at = NOW() WHERE id = $3",
+		newRefreshHash, time.Now().Add(7*24*time.Hour), tokenID,
+	)
+
+	if err != nil {
+		return "", "", fmt.Errorf("failed to update refresh token")
+	}
+
+	return accessToken, newRefreshToken, nil
 }
